@@ -9,14 +9,13 @@ typedef struct { float x, y; } vec2f;
 typedef struct { float x, y, z; } vec3f;
 typedef struct { float x, y, z, w; } vec4f;
 typedef struct { float m[2][2]; } mat2f;
+typedef struct { float m[3][3]; } mat3f;
 typedef struct { float m[4][4]; } mat4f;
 
 float sqrf(float val);
 
 // TODO:
 // 1) mat4f
-// 2) mat3f
-// 3) mat2f
 
 // ===== vec2f =====
 vec2f vec2f_add(vec2f lhs, vec2f rhs);
@@ -50,7 +49,7 @@ vec4f vec4f_mul(vec4f v, float val);
 vec4f vec4f_div(vec4f v, float val);
 vec4f vec4f_norm(vec4f v);
 vec4f vec4f_neg(vec4f v);
-// TODO: To implement cross product I need to implement determinant calculation
+// TODO: Reimplenet cross product using mat4f_minor 
 vec4f vec4f_cross(vec4f lhs, vec4f rhs);
 float vec4f_dot(vec4f lhs, vec4f rhs);
 float vec4f_sqrlen(vec4f v);
@@ -72,6 +71,22 @@ float mat2f_det(mat2f m);
 mat2f mat2f_adj(mat2f m);
 mat2f mat2f_inverse(mat2f m);
 void mat2f_print(const char* name, mat2f m);
+
+// ===== mat3f =====
+mat3f mat3f_identity(void);
+mat3f mat3f_from_vec3fs(vec3f r0, vec3f r1, vec3f r2);
+mat3f mat3f_add(mat3f lhs, mat3f rhs);
+mat3f mat3f_sub(mat3f lhs, mat3f rhs);
+mat3f mat3f_mul_val(mat3f m, float val);
+vec3f mat3f_mul_vec3f(mat3f m, vec3f v);
+mat3f mat3f_mul_mat3f(mat3f lhs, mat3f rhs);
+mat3f mat3f_transpose(mat3f m);
+float mat3f_minor(mat3f m, int r, int c);
+float mat3f_cof(mat3f m, int r, int c);
+float mat3f_det(mat3f m);
+mat3f mat3f_adj(mat3f m);
+mat3f mat3f_inverse(mat3f m);
+void mat3f_print(const char* name, mat3f m);
 
 // ===== mat4f =====
 mat4f mat4f_identity(void);
@@ -186,9 +201,11 @@ vec3f vec3f_neg(vec3f v)
 
 vec3f vec3f_cross(vec3f lhs, vec3f rhs)
 {
-    float x = lhs.y * rhs.z - lhs.z * rhs.y; 
-    float y = lhs.x * rhs.z - lhs.z * rhs.x;
-    float z = lhs.x * rhs.y - lhs.y * rhs.x;
+    mat3f minor_mat = mat3f_from_vec3fs(vec3f(0, 0, 0), lhs, rhs);
+
+    float x = mat3f_minor(minor_mat, 0, 0); 
+    float y = mat3f_minor(minor_mat, 0, 1);
+    float z = mat3f_minor(minor_mat, 0, 2);
 
     return vec3f(x, y, z);
 }
@@ -282,7 +299,7 @@ mat2f mat2f_identity(void)
 mat2f mat2f_from_vec2fs(vec2f r0, vec2f r1)
 {
     return (mat2f)
-    {{
+    {{ 
 	{r0.x, r0.y},
 	{r1.x, r1.y}
     }};
@@ -327,6 +344,33 @@ mat2f mat2f_mul_val(mat2f m, float val)
 	for (int c = 0; c < 2; ++c)
 	{
 	    out.m[r][c] = m.m[r][c] * val;
+	}
+    }
+
+    return out;
+}
+
+vec2f mat2f_mul_vec2f(mat2f m, vec2f v)
+{
+    float x, y;
+    x = m.m[0][0] * v.x + m.m[0][1] * v.y;
+    y = m.m[1][0] * v.x + m.m[1][1] * v.y;
+
+    return vec2f(x, y);
+}
+
+mat2f mat2f_mul_mat2f(mat2f lhs, mat2f rhs)
+{
+    mat2f out = {{{ 0 }}};
+
+    for (int r = 0; r < 2; ++r)
+    {
+	for (int c = 0; c < 2; ++c)
+	{
+	    for (int k = 0; k < 2; ++k)
+	    {
+		out.m[r][c] += lhs.m[r][k] * rhs.m[k][c];
+	    }
 	}
     }
 
@@ -398,24 +442,107 @@ mat2f mat2f_inverse(mat2f m)
     return mat2f_mul_val(adj, inv_det);
 }
 
-vec2f mat2f_mul_vec2f(mat2f m, vec2f v)
-{
-    float x, y;
-    x = m.m[0][0] * v.x + m.m[0][1] * v.y;
-    y = m.m[1][0] * v.x + m.m[1][1] * v.y;
 
-    return vec2f(x, y);
-}
-
-mat2f mat2f_mul_mat2f(mat2f lhs, mat2f rhs)
+void mat2f_print(const char* name, mat2f m)
 {
-    mat2f out = {{{ 0 }}};
+    printf("%s:\n", name);
 
     for (int r = 0; r < 2; ++r)
     {
 	for (int c = 0; c < 2; ++c)
 	{
-	    for (int k = 0; k < 2; ++k)
+	    printf("%f ", m.m[r][c]);
+	}
+	putchar('\n');
+    }
+}
+
+// ===== mat3f =====
+
+mat3f mat3f_identity(void)
+{
+    return (mat3f)
+    {{ 
+	{1, 0, 0},
+	{0, 1, 0},
+	{0, 0, 1}
+    }};
+}
+
+mat3f mat3f_from_vec3fs(vec3f r0, vec3f r1, vec3f r2)
+{
+    return (mat3f)
+    {{ 
+	{r0.x, r0.y, r0.z},
+	{r1.x, r1.y, r1.z},
+	{r2.x, r2.y, r2.z}
+    }};
+}
+
+mat3f mat3f_add(mat3f lhs, mat3f rhs)
+{
+    mat3f out;
+
+    for (int r = 0; r < 3; ++r)
+    {
+	for (int c = 0; c < 3; ++c)
+	{
+	    out.m[r][c] = lhs.m[r][c] + rhs.m[r][c];
+	}
+    }
+
+    return out;
+}
+
+mat3f mat3f_sub(mat3f lhs, mat3f rhs)
+{
+    mat3f out;
+
+    for (int r = 0; r < 3; ++r)
+    {
+	for (int c = 0; c < 3; ++c)
+	{
+	    out.m[r][c] = lhs.m[r][c] - rhs.m[r][c];
+	}
+    }
+
+    return out;
+}
+
+mat3f mat3f_mul_val(mat3f m, float val)
+{
+    mat3f out;
+
+    for (int r = 0; r < 3; ++r)
+    {
+	for (int c = 0; c < 3; ++c)
+	{
+	    out.m[r][c] = m.m[r][c] * val;
+	}
+    }
+
+    return out;
+}
+
+vec3f mat3f_mul_vec3f(mat3f m, vec3f v)
+{
+    float x, y, z;
+    x = m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z;
+    y = m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z;
+    z = m.m[2][0] * v.x + m.m[2][1] * v.y + m.m[2][2] * v.z;
+
+    return vec3f(x, y, z);
+}
+
+mat3f mat3f_mul_mat3f(mat3f lhs, mat3f rhs)
+{
+    mat3f out = {{{ 0 }}};
+
+    for (int r = 0; r < 3; ++r)
+    {
+	for (int c = 0; c < 3; ++c)
+	{
+	    for (int k = 0; k < 3; ++k)
 	    {
 		out.m[r][c] += lhs.m[r][k] * rhs.m[k][c];
 	    }
@@ -425,13 +552,99 @@ mat2f mat2f_mul_mat2f(mat2f lhs, mat2f rhs)
     return out;
 }
 
-void mat2f_print(const char* name, mat2f m)
+mat3f mat3f_transpose(mat3f m)
+{
+    mat3f out;
+
+    for (int r = 0; r < 3; ++r)
+    {
+	for (int c = 0; c < 3; ++c)
+	{
+	    out.m[r][c] = m.m[c][r];
+	}
+    }
+
+    return out;
+}
+
+float mat3f_minor(mat3f m, int r0, int c0)
+{
+    int y = 0;
+    int x = 0;
+    mat2f minor_mat;
+    for (int r = 0; r < 3; ++r)
+    {
+	for (int c = 0; c < 3; ++c)
+	{
+	    if (r != r0 && c != c0)
+	    {
+		minor_mat.m[y][x] = m.m[r][c];
+
+		if (++x == 2)
+		{
+		    x = 0;
+		    ++y;
+		}
+	    }
+	}
+    }
+
+    return mat2f_det(minor_mat);
+}
+
+float mat3f_cof(mat3f m, int r, int c)
+{
+    int sign = ((r + c) % 2 == 0) ? 1 : -1;
+
+    return sign * mat3f_minor(m, r, c);
+}
+
+float mat3f_det(mat3f m)
+{
+    float det = 0;
+
+    for (int c = 0; c < 3; ++c)
+    {
+	det += m.m[0][c] * mat3f_cof(m, 0, c);
+    }
+
+    return det;
+}
+
+mat3f mat3f_adj(mat3f m)
+{
+    mat3f out;
+
+    for (int r = 0; r < 3; ++r)
+    {
+	for (int c = 0; c < 3; ++c)
+	{
+	    out.m[r][c] = mat3f_cof(m, r, c);
+	}
+    }
+
+    return mat3f_transpose(out);
+}
+
+mat3f mat3f_inverse(mat3f m)
+{
+    float det = mat3f_det(m);
+    assert(det != 0);
+
+    float inv_det = 1 / det;
+    mat3f adj = mat3f_adj(m);
+
+    return mat3f_mul_val(adj, inv_det);
+}
+
+
+void mat3f_print(const char* name, mat3f m)
 {
     printf("%s:\n", name);
 
-    for (int r = 0; r < 2; ++r)
+    for (int r = 0; r < 3; ++r)
     {
-	for (int c = 0; c < 2; ++c)
+	for (int c = 0; c < 3; ++c)
 	{
 	    printf("%f ", m.m[r][c]);
 	}

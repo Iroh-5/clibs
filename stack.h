@@ -36,7 +36,7 @@ void    stack_push(stack* s, int32_t val);
 int32_t stack_top(stack* s);
 void    stack_pop(stack* s);
 
-#ifdef STACK_IMPLEMENTATION
+#ifdef STACK_IMPL
 
 void stack_init(stack* s)
 {

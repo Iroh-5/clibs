@@ -12,10 +12,8 @@ typedef struct { float m[2][2]; } mat2f;
 typedef struct { float m[3][3]; } mat3f;
 typedef struct { float m[4][4]; } mat4f;
 
+// TODO: add float related functions
 float sqrf(float val);
-
-// TODO:
-// 1) mat4f
 
 // ===== vec2f =====
 vec2f vec2f_add(vec2f lhs, vec2f rhs);
@@ -49,8 +47,6 @@ vec4f vec4f_mul(vec4f v, float val);
 vec4f vec4f_div(vec4f v, float val);
 vec4f vec4f_norm(vec4f v);
 vec4f vec4f_neg(vec4f v);
-// TODO: Reimplenet cross product using mat4f_minor 
-vec4f vec4f_cross(vec4f lhs, vec4f rhs);
 float vec4f_dot(vec4f lhs, vec4f rhs);
 float vec4f_sqrlen(vec4f v);
 float vec4f_len(vec4f v);
@@ -91,9 +87,17 @@ void mat3f_print(const char* name, mat3f m);
 // ===== mat4f =====
 mat4f mat4f_identity(void);
 mat4f mat4f_from_vec4fs(vec4f r0, vec4f r1, vec4f r2, vec4f r3);
+mat4f mat4f_add(mat4f lhs, mat4f rhs);
+mat4f mat4f_sub(mat4f lhs, mat4f rhs);
+mat4f mat4f_mul_val(mat4f m, float val);
 vec4f mat4f_mul_vec4f(mat4f m, vec4f v);
 mat4f mat4f_mul_mat4f(mat4f lhs, mat4f rhs);
 mat4f mat4f_transpose(mat4f m);
+float mat4f_minor(mat4f m, int r, int c);
+float mat4f_cof(mat4f m, int r, int c); 
+float mat4f_det(mat4f m);
+mat4f mat4f_adj(mat4f m);
+mat4f mat4f_inverse(mat4f m);
 void mat4f_print(const char* name, mat4f m);
 
 #define vec2f(...) (vec2f){__VA_ARGS__}
@@ -201,11 +205,11 @@ vec3f vec3f_neg(vec3f v)
 
 vec3f vec3f_cross(vec3f lhs, vec3f rhs)
 {
-    mat3f minor_mat = mat3f_from_vec3fs(vec3f(0, 0, 0), lhs, rhs);
+    mat3f minor_mat = mat3f_from_vec3fs(vec3f(1, 1, 1), lhs, rhs);
 
-    float x = mat3f_minor(minor_mat, 0, 0); 
-    float y = mat3f_minor(minor_mat, 0, 1);
-    float z = mat3f_minor(minor_mat, 0, 2);
+    float x = mat3f_cof(minor_mat, 0, 0); 
+    float y = mat3f_cof(minor_mat, 0, 1);
+    float z = mat3f_cof(minor_mat, 0, 2);
 
     return vec3f(x, y, z);
 }
@@ -693,6 +697,36 @@ vec4f mat4f_mul_vec4f(mat4f m, vec4f v)
     return vec4f(product[0], product[1], product[2], product[3]);
 }
 
+mat4f mat4f_add(mat4f lhs, mat4f rhs)
+{
+    mat4f out;
+
+    for (int r = 0; r < 4; ++r)
+    {
+	for (int c = 0; c < 4; ++c)
+	{
+	    out.m[r][c] = lhs.m[r][c] + rhs.m[r][c];
+	}
+    }
+
+    return out;
+}
+
+mat4f mat4f_sub(mat4f lhs, mat4f rhs)
+{
+    mat4f out;
+
+    for (int r = 0; r < 4; ++r)
+    {
+	for (int c = 0; c < 4; ++c)
+	{
+	    out.m[r][c] = lhs.m[r][c] - rhs.m[r][c];
+	}
+    }
+
+    return out;
+}
+
 mat4f mat4f_mul_mat4f(mat4f lhs, mat4f rhs)
 {
     mat4f out = {{{ 0 }}};
@@ -705,6 +739,21 @@ mat4f mat4f_mul_mat4f(mat4f lhs, mat4f rhs)
 	    {
 		out.m[r][c] += lhs.m[r][ind] * rhs.m[ind][c];
 	    }
+	}
+    }
+
+    return out;
+}
+
+mat4f mat4f_mul_val(mat4f m, float val)
+{
+    mat4f out = {{{ 0 }}};
+
+    for (int r = 0; r < 4; ++r)
+    {
+	for (int c = 0; c < 4; ++c)
+	{
+	    out.m[r][c] = m.m[r][c] * val;
 	}
     }
 
@@ -724,6 +773,76 @@ mat4f mat4f_transpose(mat4f m)
     }
 
     return out;
+}
+
+float mat4f_minor(mat4f m, int r0, int c0)
+{
+    int y = 0;
+    int x = 0;
+    mat3f minor_mat;
+    for (int r = 0; r < 4; ++r)
+    {
+	for (int c = 0; c < 4; ++c)
+	{
+	    if (r != r0 && c != c0)
+	    {
+		minor_mat.m[y][x] = m.m[r][c];
+
+		if (++x == 3)
+		{
+		    x = 0;
+		    ++y;
+		}
+	    }
+	}
+    }
+
+    return mat3f_det(minor_mat);
+}
+
+float mat4f_cof(mat4f m, int r, int c)
+{
+    int sign = ((r + c) % 2 == 0) ? 1 : -1;
+
+    return sign * mat4f_minor(m, r, c);
+}
+
+float mat4f_det(mat4f m)
+{
+    float det = 0;
+
+    for (int c = 0; c < 4; ++c)
+    {
+	det += m.m[0][c] * mat4f_cof(m, 0, c);
+    }
+
+    return det;
+}
+
+mat4f mat4f_adj(mat4f m)
+{
+    mat4f out;
+
+    for (int r = 0; r < 4; ++r)
+    {
+	for (int c = 0; c < 4; ++c)
+	{
+	    out.m[r][c] = mat4f_cof(m, r, c);
+	}
+    }
+
+    return mat4f_transpose(out);
+}
+
+mat4f mat4f_inverse(mat4f m)
+{
+    float det = mat4f_det(m);
+    assert(det != 0);
+
+    float inv_det = 1 / det;
+    mat4f adj = mat4f_adj(m);
+
+    return mat4f_mul_val(adj, inv_det);
 }
 
 void mat4f_print(const char* name, mat4f m)

@@ -13,7 +13,10 @@ typedef struct { float m[3][3]; } mat3f;
 typedef struct { float m[4][4]; } mat4f;
 
 // TODO: add float related functions
-float sqrf(float val);
+inline float sqrf(float val)
+{
+    return val * val;
+}
 
 // ===== vec2f =====
 vec2f vec2f_add(vec2f lhs, vec2f rhs);
@@ -105,13 +108,6 @@ void mat4f_print(const char* name, mat4f m);
 #define vec4f(...) (vec4f){__VA_ARGS__}
 
 #ifdef LALGBR_IMPL
-
-// ===== float numbers functions =====
-
-float sqrf(float val)
-{
-    return val * val;
-}
 
 // ===== vec2f =====
 

@@ -5,6 +5,8 @@
 #include <math.h>
 #include <assert.h>
 
+#define PI 3.14159265358979323846
+
 typedef struct { float x, y; } vec2f;
 typedef struct { float x, y, z; } vec3f;
 typedef struct { float x, y, z, w; } vec4f;
@@ -99,6 +101,11 @@ float mat4f_det(mat4f m);
 mat4f mat4f_adj(mat4f m);
 mat4f mat4f_inverse(mat4f m);
 void mat4f_print(const char* name, mat4f m);
+
+// ===== transformation matrices =====
+mat4f mat4f_translate(vec3f pos);
+mat4f mat4f_scale(vec3f factors);
+mat4f mat4f_rotate(float angle, vec3f axis);
 
 #define vec2f(...) (vec2f){__VA_ARGS__}
 #define vec3f(...) (vec3f){__VA_ARGS__}
@@ -856,6 +863,50 @@ void mat4f_print(const char* name, mat4f m)
 	}
 	putchar('\n');
     }
+}
+
+// ===== transformation matrices =====
+mat4f mat4f_translate(vec3f pos)
+{
+    mat4f m = mat4f_identity();
+    
+    m.m[0][3] = pos.x;
+    m.m[1][3] = pos.y;
+    m.m[2][3] = pos.z;
+
+    return m;
+}
+
+mat4f mat4f_scale(vec3f factors)
+{
+    mat4f m = mat4f_identity();
+    
+    m.m[0][0] = factors.x;
+    m.m[1][1] = factors.y;
+    m.m[2][2] = factors.z;
+
+    return m;
+}
+
+mat4f mat4f_rotate(float angle, vec3f axis)
+{
+    angle   = (angle * PI) / 180.0f;
+    axis    = vec3f_norm(axis); 
+    mat4f m = mat4f_identity();
+    float c = cos(angle);
+    float s = sin(angle);
+
+    m.m[0][0] = sqrf(axis.x) * (1 - c) + c;
+    m.m[0][1] = axis.x * axis.y * (1 - c) - s * axis.z;
+    m.m[0][2] = axis.x * axis.z * (1 - c) + s * axis.y;
+    m.m[1][0] = axis.y * axis.x * (1 - c) + s * axis.z;
+    m.m[1][1] = sqrf(axis.y) * (1 - c) + c;
+    m.m[1][2] = axis.y * axis.z * (1 - c) - s * axis.x;
+    m.m[2][0] = axis.x * axis.z * (1 - c) - s * axis.y;
+    m.m[2][1] = axis.y * axis.z * (1 - c) + s * axis.x;
+    m.m[2][2] = sqrf(axis.z) * (1 - c) + c;
+
+    return m;
 }
 
 #endif

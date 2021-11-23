@@ -15,10 +15,7 @@ typedef struct { float m[3][3]; } mat3f;
 typedef struct { float m[4][4]; } mat4f;
 
 // TODO: add float related functions
-inline float sqrf(float val)
-{
-    return val * val;
-}
+float sqrf(float val);
 
 // ===== vec2f =====
 vec2f vec2f_add(vec2f lhs, vec2f rhs);
@@ -110,11 +107,21 @@ mat4f mat4f_translate(vec3f pos);
 mat4f mat4f_scale(vec3f factors);
 mat4f mat4f_rotate(float angle, vec3f axis);
 
+// ===== projection matrices =====
+mat4f frustum(float left, float right, float bottom, float top, float near, float far);
+mat4f orthographic(float left, float right, float bottom, float top, float near, float far);
+
 #define vec2f(...) (vec2f){__VA_ARGS__}
 #define vec3f(...) (vec3f){__VA_ARGS__}
 #define vec4f(...) (vec4f){__VA_ARGS__}
 
 #ifdef LALGBR_IMPL
+
+// ===== float functions =====
+float sqrf(float val)
+{
+    return val * val;
+}
 
 // ===== vec2f =====
 
@@ -903,6 +910,41 @@ mat4f mat4f_rotate(float angle, vec3f axis)
     m.m[2][2] = sqrf(axis.z) * (1 - c) + c;
 
     return m;
+}
+
+// ===== projection matrices =====
+mat4f frustum(float left, float right, float bottom, float top, float near, float far)
+{
+    float x_range = right - left;
+    float y_range = top - bottom;
+    float z_range = far - near;
+
+    assert(x_range > 0 && y_range > 0 && z_range > 0);
+    assert(near > 0 && far > 0);
+
+    vec4f r0 = vec4f(2 * near / x_range, 0.0f, (right + left) / x_range, 0.0f);
+    vec4f r1 = vec4f(0.0f, 2 * near / y_range, (top + bottom) / y_range, 0.0f);
+    vec4f r2 = vec4f(0.0f, 0.0f, -(near + far) / z_range, -2 * near * far / z_range);
+    vec4f r3 = vec4f(0.0f, 0.0f, -1.0f, 0.0f);
+
+    return mat4f_from_vec4fs(r0, r1, r2, r3);
+}
+
+mat4f orthographic(float left, float right, float bottom, float top, float near, float far)
+{
+    float x_range = right - left;
+    float y_range = top - bottom;
+    float z_range = far - near;
+
+    assert(x_range > 0 && y_range > 0 && z_range > 0);
+    assert(near > 0 && far > 0);
+
+    vec4f r0 = vec4f(2 / x_range, 0.0f, 0.0f, -(left + right) / x_range);
+    vec4f r1 = vec4f(0.0f, 2 / y_range, 0.0f, -(top + bottom) / y_range);
+    vec4f r2 = vec4f(0.0f, 0.0f, -2 / z_range, -(far + near) / z_range);
+    vec4f r3 = vec4f(0.0f, 0.0f, 0.0f, 1.0f);
+
+    return mat4f_from_vec4fs(r0, r1, r2, r3);
 }
 
 #endif

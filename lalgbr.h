@@ -109,6 +109,7 @@ mat4f mat4f_rotate(float angle, vec3f axis);
 
 // ===== projection matrices =====
 mat4f frustum(float left, float right, float bottom, float top, float near, float far);
+mat4f perspective(float fovy, float aspect, float near, float far);
 mat4f orthographic(float left, float right, float bottom, float top, float near, float far);
 
 #define vec2f(...) (vec2f){__VA_ARGS__}
@@ -943,6 +944,22 @@ mat4f orthographic(float left, float right, float bottom, float top, float near,
     vec4f r1 = vec4f(0.0f, 2 / y_range, 0.0f, -(top + bottom) / y_range);
     vec4f r2 = vec4f(0.0f, 0.0f, -2 / z_range, -(far + near) / z_range);
     vec4f r3 = vec4f(0.0f, 0.0f, 0.0f, 1.0f);
+
+    return mat4f_from_vec4fs(r0, r1, r2, r3);
+}
+
+mat4f perspective(float fovy, float aspect, float near, float far)
+{
+    float z_range = far - near;
+
+    assert(fovy > 0 && aspect > 0);
+    assert(near > 0 && far > 0 && z_range > 0);
+
+    float S = 1 / (float)tan((fovy * PI) / 360);
+    vec4f r0 = vec4f(S / aspect, 0.0f, 0.0f, 0.0f);
+    vec4f r1 = vec4f(0.0f, S, 0.0f, 0.0f);
+    vec4f r2 = vec4f(0.0f, 0.0f, -(far + near) / z_range, -2 * far * near / z_range);
+    vec4f r3 = vec4f(0.0f, 0.0f, -1, 0.0f);
 
     return mat4f_from_vec4fs(r0, r1, r2, r3);
 }

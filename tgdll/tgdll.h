@@ -9,8 +9,6 @@
 
 #include "../utils.h"
 
-#define VTOT(type, expr) *((type*)expr)
-
 typedef struct dll dll;
 typedef struct lnode lnode;
 

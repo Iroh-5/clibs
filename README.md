@@ -1,5 +1,5 @@
-These are header-only C libriaries I write for recreational purposes. If you want to use one, just add "LIBRARY_NAME"_IMPL line before including header in only *one* source file.
+There are libraries that were written for fun or educational purposes.
 
-Here is the list of them:
-* stack.h
-* lalgbr.h
+There are:
+* tgdll - type-generic doubly-linked list
+* lalgbr - linear algebra library

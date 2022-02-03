@@ -9,7 +9,7 @@
 #endif
 
 #ifndef QUEUE_TYPED
-	#define QUEUE_TYPED(name) name
+	#define QUEUE_TYPED(name) int_ ## name
 #endif
 
 typedef struct QUEUE_TYPED(qnode) QUEUE_TYPED(qnode);
